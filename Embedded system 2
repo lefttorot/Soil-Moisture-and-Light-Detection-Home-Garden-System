@@ -1,10 +1,12 @@
-int greenLed = D5;
-int redLed = D4;
+int greenLed = D5; // green LED connected to pin D5
+int redLed = D4; // red LED connected to pin D4
 
 void setup() {
+    // initialized pins as output
     pinMode(greenLed, OUTPUT);
     pinMode(redLed, OUTPUT);
     
+    // recieves event data from particle cloud
     Particle.subscribe("red", redHandler, MY_DEVICES);
     Particle.subscribe("green", greenHandler, MY_DEVICES);
 }
@@ -12,12 +14,17 @@ void setup() {
 void loop() {
 }
 
+// subscribe handlers
 void redHandler(const char *event, const char *data) {
+    // turns off green LED
     digitalWrite(greenLed, LOW);
+    // turns on red LED
     digitalWrite(redLed, HIGH);
 }
 
 void greenHandler(const char *event, const char *data) {
+    // turns off red LED
     digitalWrite(redLed, LOW);
+    // turns on green LED
     digitalWrite(greenLed, HIGH);
 }
