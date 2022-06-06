@@ -1,34 +1,43 @@
 #include <BH1750.h>
 #include <LiquidCrystal_I2C_Spark.h>
 
-const int sensor_pin = A3;	//red wire to usb, black to ground, blue to a3
+const int sensor_pin = A5;	// connects soil sensor 
 
-BH1750 sensor(0x23, Wire);
+BH1750 sensor(0x23, Wire); // light sensor
 
-LiquidCrystal_I2C *lcd;
+LiquidCrystal_I2C *lcd; // lcd screen
 
-bool lightCheck = false;
+// boolean flags in order to publish IFTTT information only once when the event occurs to
+// avoid notification spam
+bool lightCheck = false; 
 bool soilCheck = false;
 
 void setup() {
+    // initializes the LCD screen
     lcd = new LiquidCrystal_I2C(0x27, 16, 2);
     lcd->init();
     lcd->backlight();
     lcd->clear();
     
+    // sets up the light sensor
     sensor.begin();
     sensor.set_sensor_mode(BH1750::forced_mode_high_res2);
 }
 
 void loop() {
   
+  // reads data from soil sensor
   int soil_moisture = analogRead(sensor_pin);
+  // publishes data to particle cloud
   Particle.publish("soil", String(soil_moisture), PRIVATE);
   
+  // reads data from light sensor
   sensor.make_forced_measurement();
   int light = sensor.get_light_level();
+  // publishes data to particle cloud
   Particle.publish("light", String(light), PRIVATE);
   
+  // signals whether the red or green LED should be on
   if (soil_moisture < 300 && light < 100)  {
     Particle.publish("red", PRIVATE);
   }
@@ -39,6 +48,7 @@ void loop() {
     Particle.publish("green", PRIVATE);
   }
   
+  // clears and displays data on LCD screen
   lcd->clear();
   lcd->setCursor(2,0);
   lcd->print("Moisture: ");
@@ -47,6 +57,7 @@ void loop() {
   lcd->print("Light: ");
   lcd->print(light);
   
+  // IFTTT light notification
   if (light > 100 && !lightCheck) {
     Particle.publish("light-changed", "sun");
     lightCheck = true;
@@ -56,6 +67,7 @@ void loop() {
     lightCheck = false;  
   }
   
+  // IFTTT soil notification
   if (soil_moisture < 100 && !soilCheck) {
     Particle.publish("need-water", "dry");
     soilCheck = true;
@@ -64,5 +76,6 @@ void loop() {
     soilCheck = false;
   }
   
+  // delays for 5 seconds
   delay(5000);
 }
