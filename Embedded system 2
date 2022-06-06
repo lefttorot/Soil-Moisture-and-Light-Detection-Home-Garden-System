@@ -1,0 +1,23 @@
+int greenLed = D5;
+int redLed = D4;
+
+void setup() {
+    pinMode(greenLed, OUTPUT);
+    pinMode(redLed, OUTPUT);
+    
+    Particle.subscribe("red", redHandler, MY_DEVICES);
+    Particle.subscribe("green", greenHandler, MY_DEVICES);
+}
+
+void loop() {
+}
+
+void redHandler(const char *event, const char *data) {
+    digitalWrite(greenLed, LOW);
+    digitalWrite(redLed, HIGH);
+}
+
+void greenHandler(const char *event, const char *data) {
+    digitalWrite(redLed, LOW);
+    digitalWrite(greenLed, HIGH);
+}
