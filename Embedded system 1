@@ -1,0 +1,68 @@
+#include <BH1750.h>
+#include <LiquidCrystal_I2C_Spark.h>
+
+const int sensor_pin = A3;	//red wire to usb, black to ground, blue to a3
+
+BH1750 sensor(0x23, Wire);
+
+LiquidCrystal_I2C *lcd;
+
+bool lightCheck = false;
+bool soilCheck = false;
+
+void setup() {
+    lcd = new LiquidCrystal_I2C(0x27, 16, 2);
+    lcd->init();
+    lcd->backlight();
+    lcd->clear();
+    
+    sensor.begin();
+    sensor.set_sensor_mode(BH1750::forced_mode_high_res2);
+}
+
+void loop() {
+  
+  int soil_moisture = analogRead(sensor_pin);
+  Particle.publish("soil", String(soil_moisture), PRIVATE);
+  
+  sensor.make_forced_measurement();
+  int light = sensor.get_light_level();
+  Particle.publish("light", String(light), PRIVATE);
+  
+  if (soil_moisture < 300 && light < 100)  {
+    Particle.publish("red", PRIVATE);
+  }
+  else if (soil_moisture < 300 || light < 100) {
+    Particle.publish("red", PRIVATE);  
+  }
+  else if (soil_moisture > 300 && light > 100) {
+    Particle.publish("green", PRIVATE);
+  }
+  
+  lcd->clear();
+  lcd->setCursor(2,0);
+  lcd->print("Moisture: ");
+  lcd->print(soil_moisture);
+  lcd->setCursor(2,1);
+  lcd->print("Light: ");
+  lcd->print(light);
+  
+  if (light > 100 && !lightCheck) {
+    Particle.publish("light-changed", "sun");
+    lightCheck = true;
+  }
+  else if (light < 100 && lightCheck) {
+    Particle.publish("light-changed", "dark");
+    lightCheck = false;  
+  }
+  
+  if (soil_moisture < 100 && !soilCheck) {
+    Particle.publish("need-water", "dry");
+    soilCheck = true;
+  }
+  else if (soil_moisture > 100 && soilCheck) {
+    soilCheck = false;
+  }
+  
+  delay(5000);
+}
